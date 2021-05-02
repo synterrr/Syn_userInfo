@@ -1,13 +1,11 @@
 local vrp = GetResourceState('vrp') == "started"
-local esx = GetResourceState('es_extended') == "started"
-
 --- function to get all user identifiers such as discord, license, ip, steam link, steam hex
 ---@param source number player source
 local function getIDS(source)
     local UIDs = {
         steam = '',
         steamhex = '',
-        userSource = '',
+        userID = '',
         discord = '',
         license = '',
         ip = ''
@@ -26,8 +24,9 @@ local function getIDS(source)
         elseif plyID:find("ip") then
             UIDs.ip = plyID
         end
-        UIDs.userSource = source
     end
+    UIDs.userID = vRP.getUserId(source)
+    return UIDs
 end
 
 local function vRPFramework()
@@ -37,42 +36,56 @@ local function vRPFramework()
     vRP = Proxy.getInterface("vRP")
     vRPclient = Tunnel.getInterface("vRP")
 
-    vRP._prepare('vRP/getUserMoney', "SELECT * FROM vrp_users_moneys WHERE user_id = @id")
-    vRP._prepare('vRP/getVehicles', "SELECT * FROM vrp_users_vehicles WHERE user_id = @id")
+    vRP._prepare('vRP/getUserMoney', "SELECT * FROM vrp_user_moneys WHERE user_id = @id")
+    vRP._prepare('vRP/getVehicles', "SELECT vehicle FROM vrp_user_vehicles WHERE user_id = @id")
+    vRP._prepare('vRP/getIdentifiers', "SELECT * FROM vrp_user_ids WHERE user_id = @id")
 
-    local userInfos = {}
+    local userMoney = {}
+    local userCars = {}
+    local userIDS = {}
 
+    --- Get user wallet and bank
+    ---@param UID number User ID
+    local function getMoney(UID)
+        local rows = vRP.query('vRP/getUserMoney', { id = UID })
+        for _, v in ipairs(rows) do
+            return v
+        end
+    end
+    --- get user vehicles
+    ---@param UID number User ID
+    local function getVehicles(UID)
+        local rows = vRP.query('vRP/getVehicles', { id = UID })
+        for i = 1, #rows do
+            local vehicles = rows[i].vehicle
+            return vehicles
+        end
+    end
+    
     RegisterCommand('UInfo', function(source, args)
         if args[1] then
-            table.insert(userInfos, vRP.query('vRP/getUserMoney', { id = args[1] }))
-            table.insert(userInfos, vRP.query('vRP/getVehicles', { id = args[1] }))
-            print(userInfos)
+            local userSource = vRP.getUserSource(parseInt(args[1]))
+            local identity = vRP.getUserIdentity(parseInt(args[1]))
+            if not userSource == nil then
+                local consult = getIDS(userSource)
+                table.insert(userIDS, consult)
+            end
+            local weapons = vRPclient.getWeapons(userSource)
+            local inventory = vRP.getInventory(userSource)
+            SendWebhook(webhook, "> **__Information from "..identity.name.." "..identity.firstname..":__**", "> **__ABOUT USER:__**\n```as\nPlayer Age: "..identity.age.."\nPlayer Registration: "..identity.registration.."\nPlayer ID: "..identity.user_id.."\nPlayer Phone: "..identity.phone.."```\n> **__Player Economy:__**\n```delphi\nPlayer Wallet: "..getMoney(args[1]).wallet.."\nPlayer Bank: "..getMoney(args[1]).bank.."```\n > **__User Vehicles:__**\n```py\nPlayer Vehicles: "..json.encode(getVehicles(args[1]), {indent = true}).."```\n> **__Player Weapons:__**\n```prolog\n"..json.encode(weapons).."```\n> **__Player Status:__**\n```py\nPlayer Health: "..vRPclient.getHealth(userSource).."\nPlayer Armour: "..vRPclient.getArmour(userSource).."```\n> **__Inventory Info:__**\n```py\n Inventory Items: "..json.encode(inventory).."```")
         end
     end)
-
-end
-
-local function ESXFramework()
-
-end
-
-local function Standalone()
-
 end
 
 CreateThread(function()
     if IsDuplicityVersion() then
         if vrp then
             vRPFramework()
-        elseif esx then
-            ESXFramework()
-        else
-            Standalone()
         end
     end
 end)
 
-local function SendWebhook(link, title, message, colour)
+function SendWebhook(link, title, message, colour)
     if not colour then
         colour = 7274308
     end
@@ -90,5 +103,6 @@ local function SendWebhook(link, title, message, colour)
             },
         }
     }
-    PerformHttpRequest(link, function(err, text, headers) end, 'POST', json.encode({avatar_url = "http://pngimg.com/uploads/monkey/monkey_PNG18727.png", username = "Minty AntiCheat", embeds = synterrr}), { ['Content-Type'] = 'application/json' })
+    PerformHttpRequest(link, function(err, text, headers) end, 'POST', json.encode({avatar_url = "http://pngimg.com/uploads/monkey/monkey_PNG18727.png", username = "SynTer User Info", embeds = synterrr}), { ['Content-Type'] = 'application/json' })
 end
+
