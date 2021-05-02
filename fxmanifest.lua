@@ -10,6 +10,7 @@ disable_lazy_natives 'yes'
 
 server_scripts {
     '@vrp/lib/utils.lua',
+    'config.lua',
     'svside.lua'
 }
 

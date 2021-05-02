@@ -60,12 +60,14 @@ local function vRPFramework()
     end
 
     RegisterCommand('UInfo', function(source, args)
-        if args[1] then
-            local userSource = vRP.getUserSource(parseInt(args[1]))
-            local identity = vRP.getUserIdentity(parseInt(args[1]))
-            local weapons = vRPclient.getWeapons(userSource)
-            local inventory = vRP.getInventory(userSource)
-            SendWebhook(webhook, "> **__Information from "..identity.name.." "..identity.firstname..":__**", "> **__ABOUT USER:__**\n```as\nPlayer Age: "..identity.age.."\nPlayer Registration: "..identity.registration.."\nPlayer ID: "..identity.user_id.."\nPlayer Phone: "..identity.phone.."```\n> **__Player Economy:__**\n```delphi\nPlayer Wallet: "..getMoney(args[1]).wallet.."\nPlayer Bank: "..getMoney(args[1]).bank.."```\n > **__User Vehicles:__**\n```py\nPlayer Vehicles: "..json.encode(getVehicles(args[1]), {indent = true}).."```\n> **__Player Weapons:__**\n```prolog\n"..json.encode(weapons).."```\n> **__Player Status:__**\n```py\nPlayer Health: "..vRPclient.getHealth(userSource).."\nPlayer Armour: "..vRPclient.getArmour(userSource).."```\n> **__Inventory Info:__**\n```py\n Inventory Items: "..json.encode(inventory).."```\n> **__User Identifiers:__**\n```prolog\nSteam Hex: "..getIDS(userSource).steamhex.."\nSteam Link: "..getIDS(userSource).steam.."\nDiscord: "..getIDS(userSource).discord.."\nLicense: "..getIDS(userSource).license.."\nIP: "..getIDS(userSource).ip.."```")
+        if vRP.hasPermission(vRP.getUserId(source), config.permission) then
+            if args[1] then
+                local userSource = vRP.getUserSource(parseInt(args[1]))
+                local identity = vRP.getUserIdentity(parseInt(args[1]))
+                local weapons = vRPclient.getWeapons(userSource)
+                local inventory = vRP.getInventory(userSource)
+                SendWebhook(config.webhook, "> **__Information from "..identity.name.." "..identity.firstname..":__**", "> **__ABOUT USER:__**\n```as\nPlayer Age: "..identity.age.."\nPlayer Registration: "..identity.registration.."\nPlayer ID: "..identity.user_id.."\nPlayer Phone: "..identity.phone.."```\n> **__Player Economy:__**\n```delphi\nPlayer Wallet: "..getMoney(args[1]).wallet.."\nPlayer Bank: "..getMoney(args[1]).bank.."```\n > **__User Vehicles:__**\n```py\nPlayer Vehicles: "..json.encode(getVehicles(args[1]), {indent = true}).."```\n> **__Player Weapons:__**\n```prolog\n"..json.encode(weapons).."```\n> **__Player Status:__**\n```py\nPlayer Health: "..vRPclient.getHealth(userSource).."\nPlayer Armour: "..vRPclient.getArmour(userSource).."```\n> **__Inventory Info:__**\n```py\n Inventory Items: "..json.encode(inventory).."```\n> **__User Identifiers:__**\n```prolog\nSteam Hex: "..getIDS(userSource).steamhex.."\nSteam Link: "..getIDS(userSource).steam.."\nDiscord: "..getIDS(userSource).discord.."\nLicense: "..getIDS(userSource).license.."\nIP: "..getIDS(userSource).ip.."```")
+            end
         end
     end)
 end

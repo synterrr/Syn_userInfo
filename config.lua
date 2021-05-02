@@ -1,0 +1,2 @@
+webhook = ''
+permission = 'default.perm'
