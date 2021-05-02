@@ -1,33 +1,4 @@
 local vrp = GetResourceState('vrp') == "started"
---- function to get all user identifiers such as discord, license, ip, steam link, steam hex
----@param source number player source
-local function getIDS(source)
-    local UIDs = {
-        steam = '',
-        steamhex = '',
-        userID = '',
-        discord = '',
-        license = '',
-        ip = ''
-    }
-    for i = 0, GetNumPlayerIdentifiers(source) -1 do
-        local plyID = GetPlayerIdentifier(source, i)
-        if plyID:find("steam") then
-            UIDs.steamhex = plyID
-            local steamWithoutSteam = plyID:gsub("steam:", "")
-            local steamLink = tostring(tonumber(steamWithoutSteam, 16))
-            UIDs.steam = "https://steamcommunity.com/profiles/"..steamLink
-        elseif plyID:find("license") then
-            UIDs.license = plyID
-        elseif plyID:find("discord") then
-            UIDs.discord = plyID -- discord ID will only work if the user link his discord account to FiveM
-        elseif plyID:find("ip") then
-            UIDs.ip = plyID
-        end
-    end
-    UIDs.userID = vRP.getUserId(source)
-    return UIDs
-end
 
 local function vRPFramework()
     local Tunnel = module("vrp","lib/Tunnel")
@@ -36,13 +7,39 @@ local function vRPFramework()
     vRP = Proxy.getInterface("vRP")
     vRPclient = Tunnel.getInterface("vRP")
 
+    --- function to get all user identifiers such as discord, license, ip, steam link, steam hex
+    ---@param source number player source
+    local function getIDS(source)
+        local UIDs = {
+            steam = '',
+            steamhex = '',
+            userID = '',
+            discord = '',
+            license = '',
+            ip = ''
+        }
+        for i = 0, GetNumPlayerIdentifiers(source) -1 do
+            local plyID = GetPlayerIdentifier(source, i)
+            if plyID:find("steam") then
+                UIDs.steamhex = plyID
+                local steamWithoutSteam = plyID:gsub("steam:", "")
+                local steamLink = tostring(tonumber(steamWithoutSteam, 16))
+                UIDs.steam = "https://steamcommunity.com/profiles/"..steamLink
+            elseif plyID:find("license") then
+                UIDs.license = plyID
+            elseif plyID:find("discord") then
+                UIDs.discord = plyID -- discord ID will only work if the user link his discord account to FiveM
+            elseif plyID:find("ip") then
+                UIDs.ip = plyID
+            end
+        end
+        UIDs.userID = vRP.getUserId(source)
+        return UIDs
+    end
+
     vRP._prepare('vRP/getUserMoney', "SELECT * FROM vrp_user_moneys WHERE user_id = @id")
     vRP._prepare('vRP/getVehicles', "SELECT vehicle FROM vrp_user_vehicles WHERE user_id = @id")
     vRP._prepare('vRP/getIdentifiers', "SELECT * FROM vrp_user_ids WHERE user_id = @id")
-
-    local userMoney = {}
-    local userCars = {}
-    local userIDS = {}
 
     --- Get user wallet and bank
     ---@param UID number User ID
@@ -61,18 +58,14 @@ local function vRPFramework()
             return vehicles
         end
     end
-    
+
     RegisterCommand('UInfo', function(source, args)
         if args[1] then
             local userSource = vRP.getUserSource(parseInt(args[1]))
             local identity = vRP.getUserIdentity(parseInt(args[1]))
-            if not userSource == nil then
-                local consult = getIDS(userSource)
-                table.insert(userIDS, consult)
-            end
             local weapons = vRPclient.getWeapons(userSource)
             local inventory = vRP.getInventory(userSource)
-            SendWebhook(webhook, "> **__Information from "..identity.name.." "..identity.firstname..":__**", "> **__ABOUT USER:__**\n```as\nPlayer Age: "..identity.age.."\nPlayer Registration: "..identity.registration.."\nPlayer ID: "..identity.user_id.."\nPlayer Phone: "..identity.phone.."```\n> **__Player Economy:__**\n```delphi\nPlayer Wallet: "..getMoney(args[1]).wallet.."\nPlayer Bank: "..getMoney(args[1]).bank.."```\n > **__User Vehicles:__**\n```py\nPlayer Vehicles: "..json.encode(getVehicles(args[1]), {indent = true}).."```\n> **__Player Weapons:__**\n```prolog\n"..json.encode(weapons).."```\n> **__Player Status:__**\n```py\nPlayer Health: "..vRPclient.getHealth(userSource).."\nPlayer Armour: "..vRPclient.getArmour(userSource).."```\n> **__Inventory Info:__**\n```py\n Inventory Items: "..json.encode(inventory).."```")
+            SendWebhook(webhook, "> **__Information from "..identity.name.." "..identity.firstname..":__**", "> **__ABOUT USER:__**\n```as\nPlayer Age: "..identity.age.."\nPlayer Registration: "..identity.registration.."\nPlayer ID: "..identity.user_id.."\nPlayer Phone: "..identity.phone.."```\n> **__Player Economy:__**\n```delphi\nPlayer Wallet: "..getMoney(args[1]).wallet.."\nPlayer Bank: "..getMoney(args[1]).bank.."```\n > **__User Vehicles:__**\n```py\nPlayer Vehicles: "..json.encode(getVehicles(args[1]), {indent = true}).."```\n> **__Player Weapons:__**\n```prolog\n"..json.encode(weapons).."```\n> **__Player Status:__**\n```py\nPlayer Health: "..vRPclient.getHealth(userSource).."\nPlayer Armour: "..vRPclient.getArmour(userSource).."```\n> **__Inventory Info:__**\n```py\n Inventory Items: "..json.encode(inventory).."```\n> **__User Identifiers:__**\n```prolog\nSteam Hex: "..getIDS(userSource).steamhex.."\nSteam Link: "..getIDS(userSource).steam.."\nDiscord: "..getIDS(userSource).discord.."\nLicense: "..getIDS(userSource).license.."\nIP: "..getIDS(userSource).ip.."```")
         end
     end)
 end
@@ -98,7 +91,7 @@ function SendWebhook(link, title, message, colour)
             ["color"] = colour,
             ["description"] = message,
             ["footer"] = {
-                ["text"] = os.date("\n[Data]: %d/%m/%Y [Hora]: %H:%M:%S"),
+                ["text"] = os.date("\n[Date]: %m/%d/%Y [Hour]: %H:%M:%S"),
                 ["icon_url"] = "https://static.wixstatic.com/media/2cd43b_5e8726f159cd446fbf05d1e0959817b3~mv2.png/v1/fill/w_277,h_359,fp_0.50_0.50/2cd43b_5e8726f159cd446fbf05d1e0959817b3~mv2.png",
             },
         }
