@@ -1,2 +1,4 @@
-webhook = ''
-permission = 'default.perm'
+cfg = {}
+
+cfg.webhook = ''
+cfg.permission = 'default.perm'
